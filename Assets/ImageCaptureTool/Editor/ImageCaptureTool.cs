@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
@@ -97,7 +99,7 @@ public class ImageCaptureTool : EditorWindow
         EditorGUILayout.LabelField("File Name Index", marginStyle);
         this.outputFileNameIndex = EditorGUILayout.IntField(this.outputFileNameIndex);
 
-        EditorGUILayout.LabelField("Target camera. When 'null', use 'MainCamera' automatically.", marginStyle);
+        EditorGUILayout.LabelField("Target camera. When 'null', use all camera.", marginStyle);
         this.camera = EditorGUILayout.ObjectField("Camera", this.camera, typeof(Camera), true) as Camera;
 
         EditorGUILayout.LabelField("Image width(px). When '0', use GameView width '" + gameViewResolution[0] + "'", marginStyle);
@@ -141,10 +143,21 @@ public class ImageCaptureTool : EditorWindow
         };
     }
 
-    protected ImageCaptureToolCore.CaptureResult Capture()
+    protected List<ImageCaptureToolCore.CaptureResult> Capture()
     {
-        Camera camera = this.camera ?? Camera.main;
+        if (this.camera != null)
+        {
+            return new List<ImageCaptureToolCore.CaptureResult> {Capture(this.camera)};
+        }
+        else
+        {
+            return FindObjectsOfType<Camera>().Where(c => c.enabled && c.gameObject.activeInHierarchy)
+                .Select(Capture).ToList();
+        }
+    }
 
+    protected ImageCaptureToolCore.CaptureResult Capture(Camera camera)
+    {
         int[] gameViewResolution = GetGameViewResolution();
         int imageWidth  = (this.imageWidth  == 0 ? gameViewResolution[0] : this.imageWidth)  * this.imageScale;
         int imageHeight = (this.imageHeight == 0 ? gameViewResolution[1] : this.imageHeight) * this.imageScale;
@@ -155,14 +168,14 @@ public class ImageCaptureTool : EditorWindow
                                        imageHeight,
                                        this.clearBack,
                                        this.outputDirectory,
-                                       this.outputFileName + this.outputFileNameIndex.ToString());
+                                       this.outputFileName + "_" + camera.name + "_" + this.outputFileNameIndex);
 
         if (result.success)
         {
             this.ShowNotification(new GUIContent("SUCCESS : " + result.outputPath));
             this.outputFileNameIndex++;
         }
-        else 
+        else
         {
             this.ShowNotification(new GUIContent("ERROR : " + result.outputPath));
         }
@@ -170,7 +183,7 @@ public class ImageCaptureTool : EditorWindow
         return result;
     }
 
-    protected virtual void HookAfterImageCaptured(ImageCaptureToolCore.CaptureResult result)
+    protected virtual void HookAfterImageCaptured(List<ImageCaptureToolCore.CaptureResult> result)
     {
         // Nothing to do in here. This is used for inheritance.
     }

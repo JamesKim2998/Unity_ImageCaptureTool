@@ -103,13 +103,13 @@ public static class ImageCaptureToolCore
         CameraClearFlags presetClearFlags      = camera.clearFlags;
         RenderTexture    presetRenderTexture   = camera.targetTexture;
 
-        if (clearBack)
+        if (clearBack && camera.clearFlags != CameraClearFlags.SolidColor)
         {
             camera.backgroundColor = Color.clear;
             camera.clearFlags = CameraClearFlags.SolidColor;
         }
 
-        RenderTexture captureImageTemp = RenderTexture.GetTemporary(width, height, 32, RenderTextureFormat.ARGB32);
+        RenderTexture captureImageTemp = RenderTexture.GetTemporary(width, height, 32, RenderTextureFormat.Default);
         Texture2D captureImage = new Texture2D(width, height, TextureFormat.ARGB32, false);
 
         camera.targetTexture = captureImageTemp;
